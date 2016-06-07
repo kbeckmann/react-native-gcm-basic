@@ -21,5 +21,14 @@
   ],
   "peerDependencies": {
     "react-native": ">=0.19.0"
-  }
+  },
+  "gitHead": "3dd4bf41ef21915a8e70e1c18d69ff9524f375ae",
+  "bugs": {
+    "url": "https://github.com/joknelid/react-native-gcm-basic/issues"
+  },
+  "readme": "ERROR: No README data found!",
+  "_id": "react-native-gcm-basic@0.1.0",
+  "_shasum": "0f2d34a28bb284b9fbd48d328f47bfeb68c32f7e",
+  "_from": "joknelid/react-native-gcm-basic",
+  "_resolved": "git://github.com/joknelid/react-native-gcm-basic.git#3dd4bf41ef21915a8e70e1c18d69ff9524f375ae"
 }

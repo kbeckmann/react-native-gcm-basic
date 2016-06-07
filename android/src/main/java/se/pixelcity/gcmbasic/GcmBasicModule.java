@@ -40,14 +40,28 @@ import android.app.NotificationManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
 
-import com.google.android.gms.iid.InstanceID;
-
 public class GcmBasicModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
     private final static String TAG = GcmBasicModule.class.getCanonicalName();
     private ReactContext mReactContext;
     private Intent mIntent;
     private Activity mActivity;
-    private boolean mIsInForeground;
+
+    public static String convertJSON(Bundle bundle) {
+        JSONObject json = new JSONObject();
+        Set<String> keys = bundle.keySet();
+        for (String key : keys) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    json.put(key, JSONObject.wrap(bundle.get(key)));
+                } else {
+                    json.put(key, bundle.get(key));
+                }
+            } catch(JSONException e) {
+                return null;
+            }
+        }
+        return json.toString();
+    }
 
     public GcmBasicModule(ReactApplicationContext reactContext, Intent intent, Activity activity) {
         super(reactContext);
@@ -111,43 +125,21 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
         }, intentFilter);
     }
 
-    private String convertJSON(Bundle bundle) {
-        JSONObject json = new JSONObject();
-        Set<String> keys = bundle.keySet();
-        for (String key : keys) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    json.put(key, JSONObject.wrap(bundle.get(key)));
-                } else {
-                    json.put(key, bundle.get(key));
-                }
-            } catch(JSONException e) {
-                return null;
-            }
-        }
-        return json.toString();
-    }
-
     private void listenGcmReceiveNotification() {
-        IntentFilter intentFilter = new IntentFilter("se.pixelcity.gcmbasic.GCMReceiveNotification");
+        IntentFilter intentFilter = new IntentFilter("GcmBasicMessageReceived");
 
         mReactContext.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.d(TAG, "GCMReceiveNotification BroadcastReceiver");
+                Log.d(TAG, "Sending message to JS");
 
                 if (mReactContext.hasActiveCatalystInstance()) {
-                    Bundle bundle = intent.getBundleExtra("bundle");
-
-                    String bundleString = convertJSON(bundle);
+                    String message = intent.getStringExtra("message");
 
                     WritableMap params = Arguments.createMap();
-                    params.putString("dataJSON", bundleString);
-                    params.putBoolean("isInForeground", mIsInForeground);
+                    params.putString("data", message);
 
                     sendEvent("remoteNotificationReceived", params);
-                    abortBroadcast();
-                } else {
                 }
             }
         }, intentFilter);
@@ -155,6 +147,8 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
 
     @ReactMethod
     public void subscribeTopic(String token, String topic) {
+        Log.d(TAG, "subscribeTopic");
+
         GcmPubSub pubSub = GcmPubSub.getInstance(this.mReactContext);
 
         try {
@@ -167,9 +161,11 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
 
     @ReactMethod
     public void requestPermissions() {
-        Log.e(TAG, "requestPermissions");
+        Log.d(TAG, "requestPermissions");
         mReactContext.startService(new Intent(mReactContext, GcmBasicListenerService.class));
         mReactContext.startService(new Intent(mReactContext, GcmBasicRegistrationService.class));
+
+        GcmBasicListenerService.setAppActive(true);
     }
 
     /*
@@ -185,6 +181,7 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
     }
     */
 
+    /*
     private Class getMainActivityClass() {
         try {
             String packageName = mReactContext.getPackageName();
@@ -202,69 +199,20 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
             return null;
         }
     }
-
-    @ReactMethod
-    public void createNotification(ReadableMap infos) {
-        Resources resources = mReactContext.getResources();
-
-        String packageName = mReactContext.getPackageName();
-
-        Class intentClass = getMainActivityClass();
-
-        Log.d(TAG, "packageName: " + packageName);
-
-        if (intentClass == null) {
-            Log.d(TAG, "intentClass is null");
-            return;
-        }
-
-        int resourceId = resources.getIdentifier(infos.getString("largeIcon"), "mipmap", packageName);
-
-        Intent intent = new Intent(mReactContext, intentClass);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(mReactContext, 0, intent,
-                PendingIntent.FLAG_ONE_SHOT);
-
-        Bitmap largeIcon = BitmapFactory.decodeResource(resources, resourceId);
-
-        Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(mReactContext)
-                .setLargeIcon(largeIcon)
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setContentTitle(infos.getString("subject"))
-                .setContentText(infos.getString("message"))
-                .setAutoCancel(infos.getBoolean("autoCancel"))
-                .setSound(defaultSoundUri)
-                .setTicker(infos.getString("ticker"))
-                .setCategory(NotificationCompat.CATEGORY_CALL)
-                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentIntent(pendingIntent);
-
-        NotificationManager notificationManager =
-                (NotificationManager) mReactContext.getSystemService(Context.NOTIFICATION_SERVICE);
-
-        Notification notif = notificationBuilder.build();
-        notif.defaults |= Notification.DEFAULT_VIBRATE;
-        notif.defaults |= Notification.DEFAULT_SOUND;
-        notif.defaults |= Notification.DEFAULT_LIGHTS;
-
-        notificationManager.notify(0, notif);
-    }
+    */
 
     @Override
     public void onHostResume() {
-        mIsInForeground = true;
+        GcmBasicListenerService.setAppActive(true);
     }
 
     @Override
     public void onHostPause() {
-        mIsInForeground = false;
+        GcmBasicListenerService.setAppActive(false);
     }
 
     @Override
     public void onHostDestroy() {
-
+        GcmBasicListenerService.setAppActive(false);
     }
 }

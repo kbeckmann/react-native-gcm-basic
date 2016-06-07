@@ -26,6 +26,15 @@ class GcmBasic {
         }
       );
     }
+    else if (type === 'notification') {
+      listener = DeviceEventEmitter.addListener(
+        DEVICE_NOTIF_EVENT,
+        (message) => {
+          handler(JSON.parse(message.data));
+        }
+      );
+    }
+
     _notifHandlers.set(handler, listener);
   }
 
