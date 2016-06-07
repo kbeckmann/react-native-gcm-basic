@@ -40,6 +40,8 @@ import android.app.NotificationManager;
 import android.media.RingtoneManager;
 import android.net.Uri;
 
+import com.google.android.gms.iid.InstanceID;
+
 public class GcmBasicModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
     private final static String TAG = GcmBasicModule.class.getCanonicalName();
     private ReactContext mReactContext;
@@ -93,11 +95,13 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
     }
 
     private void listenGcmRegistration() {
-        IntentFilter intentFilter = new IntentFilter("RNGCMRegisteredToken");
+        IntentFilter intentFilter = new IntentFilter("GcmBasicTokenReceived");
 
         mReactContext.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
+                Log.d(TAG, "Sending token to JS");
+
                 String token = intent.getStringExtra("token");
                 WritableMap params = Arguments.createMap();
                 params.putString("deviceToken", token);
@@ -163,7 +167,9 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
 
     @ReactMethod
     public void requestPermissions() {
+        Log.e(TAG, "requestPermissions");
         mReactContext.startService(new Intent(mReactContext, GcmBasicListenerService.class));
+        mReactContext.startService(new Intent(mReactContext, GcmBasicRegistrationService.class));
     }
 
     /*

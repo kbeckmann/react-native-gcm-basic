@@ -5,7 +5,7 @@ import {
   DeviceEventEmitter,
 } from 'react-native';
 
-var GcmNative = NativeModules.GcmModule;
+var GcmBasicModule = NativeModules.GcmBasicModule;
 var _notifHandlers = new Map();
 
 var DEVICE_NOTIF_EVENT = 'remoteNotificationReceived';
@@ -30,11 +30,12 @@ class GcmBasic {
   }
 
   static subscribeTopic(token, topic) {
-    GcmNative.subscribeTopic(token, topic);
+    GcmBasicModule.subscribeTopic(token, topic);
   }
 
   static requestPermissions() {
-    GcmNative.requestPermissions();
+    console.log('Hej hej');
+    GcmBasicModule.requestPermissions();
   }
 
   static removeEventListener(type: string, handler: Function) {
