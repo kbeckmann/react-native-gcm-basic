@@ -1,6 +1,7 @@
 {
   "name": "react-native-gcm-basic",
   "version": "0.1.0",
+  "main": "GcmBasic.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/joknelid/react-native-gcm-basic.git"
