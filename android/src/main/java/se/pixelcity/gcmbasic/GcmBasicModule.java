@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 
@@ -16,7 +15,6 @@ import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.google.android.gms.gcm.GcmPubSub;
 
@@ -25,20 +23,8 @@ import java.util.Map;
 import java.util.Set;
 import org.json.*;
 
-import android.preference.PreferenceManager;
 import android.util.Log;
-
 import android.content.Context;
-
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.content.res.Resources;
-import android.app.PendingIntent;
-import android.support.v4.app.NotificationCompat;
-import android.app.Notification;
-import android.app.NotificationManager;
-import android.media.RingtoneManager;
-import android.net.Uri;
 
 public class GcmBasicModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
     private final static String TAG = GcmBasicModule.class.getCanonicalName();
@@ -68,13 +54,6 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
         mReactContext = reactContext;
         mActivity = activity;
         mIntent = intent;
-
-        if (activity != null) {
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mReactContext);
-            SharedPreferences.Editor editor = preferences.edit();
-            editor.putString("GcmMainActivity", activity.getClass().getSimpleName());
-            editor.apply();
-        }
 
         listenGcmRegistration();
         listenGcmReceiveNotification();
@@ -168,39 +147,6 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
 
         GcmBasicListenerService.setAppActive(true);
     }
-
-    /*
-    @ReactMethod
-    public void stopService() {
-        if (mIntent != null) {
-            new android.os.Handler().postDelayed(new Runnable() {
-                public void run() {
-                    mReactContext.stopService(mIntent);
-                }
-            }, 1000);
-        }
-    }
-    */
-
-    /*
-    private Class getMainActivityClass() {
-        try {
-            String packageName = mReactContext.getPackageName();
-
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mReactContext);
-            String activityString = preferences.getString("GcmMainActivity", null);
-            if (activityString == null) {
-                Log.d(TAG, "GcmMainActivity is null");
-                return null;
-            } else {
-                return Class.forName(packageName + "." + activityString);
-            }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-    */
 
     @Override
     public void onHostResume() {
