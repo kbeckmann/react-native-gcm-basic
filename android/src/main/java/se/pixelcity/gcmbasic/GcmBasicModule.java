@@ -67,10 +67,7 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
         super(reactContext);
         mReactContext = reactContext;
         mActivity = activity;
-
-        // todo later
-        //        mIntent = intent;
-        mIntent = null;
+        mIntent = intent;
 
         if (activity != null) {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mReactContext);
@@ -79,11 +76,9 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
             editor.apply();
         }
 
-        if (mIntent == null) {
-            listenGcmRegistration();
-            listenGcmReceiveNotification();
-            getReactApplicationContext().addLifecycleEventListener(this);
-        }
+        listenGcmRegistration();
+        listenGcmReceiveNotification();
+        getReactApplicationContext().addLifecycleEventListener(this);
     }
 
     @Override
@@ -94,10 +89,16 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
     @Override
     public Map<String, Object> getConstants() {
         final Map<String, Object> constants = new HashMap<>();
+
         if (mIntent != null) {
-            Bundle bundle = mIntent.getBundleExtra("bundle");
-            String bundleString = convertJSON(bundle);
-            constants.put("launchNotification", bundleString);
+            if (mIntent.getPackage() == mReactContext.getPackageName() &&
+                mIntent.getAction() == "ACTION_VIEW" &&
+                mIntent.getScheme() == "notification")
+            {
+                Bundle bundle = mIntent.getExtras();
+                String bundleString = convertJSON(bundle);
+                constants.put("launchNotification", bundleString);
+            }
         }
         return constants;
     }

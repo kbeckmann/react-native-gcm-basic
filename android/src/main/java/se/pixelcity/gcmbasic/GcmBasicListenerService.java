@@ -70,6 +70,10 @@ public class GcmBasicListenerService extends GcmListenerService {
             try {
                 intent = new Intent(this, Class.forName(className));
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                intent.setAction("ACTION_VIEW");
+                intent.setData(Uri.parse("notification:///"));
+                intent.setPackage(packageName);
+                intent.putExtras(data);
                 pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent, PendingIntent.FLAG_ONE_SHOT);
             }
             catch (ClassNotFoundException e) {
@@ -94,8 +98,7 @@ public class GcmBasicListenerService extends GcmListenerService {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setSound(defaultSoundUri)
-                .setContentIntent(pendingIntent)
-                .setExtras(data);
+                .setContentIntent(pendingIntent);
 
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
