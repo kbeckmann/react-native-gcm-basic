@@ -41,9 +41,6 @@ public class GcmBasicListenerService extends GcmListenerService {
     }
 
     private void sendNotification(Bundle data) {
-
-        Log.e(TAG, "onMessageReceived 0");
-
         if (data.containsKey(TITLE_KEY) && data.containsKey(BODY_KEY)) {
             Log.d(TAG, "sendNotification - displaying notification");
 
@@ -52,13 +49,9 @@ public class GcmBasicListenerService extends GcmListenerService {
             Intent launchIntent = packageManager.getLaunchIntentForPackage(packageName);
             String className = launchIntent.getComponent().getClassName();
 
-            Log.e(TAG, "onMessageReceived 1");
-
             Intent intent = new Intent(getApplicationContext(), GcmBasicNotificationEventReceiver.class);
             intent.putExtras(data);
             PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-            Log.e(TAG, "onMessageReceived 2");
 
             ApplicationInfo applicationInfo = null;
             try {
@@ -68,8 +61,6 @@ public class GcmBasicListenerService extends GcmListenerService {
                 Log.e(TAG, "sendNotification - package not found");
                 return;
             }
-
-            Log.e(TAG, "onMessageReceived 3");
 
             Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
@@ -81,12 +72,8 @@ public class GcmBasicListenerService extends GcmListenerService {
                 .setSound(defaultSoundUri)
                 .setContentIntent(pendingIntent);
 
-            Log.e(TAG, "onMessageReceived 4");
-
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
-            Log.e(TAG, "onMessageReceived 5");
-
         }
         else {
             Log.e(TAG, "sendNotification - unrecognized message");

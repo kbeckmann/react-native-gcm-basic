@@ -179,7 +179,6 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
     @ReactMethod
     public void requestPermissions() {
         Log.d(TAG, "requestPermissions");
-        mReactContext.startService(new Intent(mReactContext, GcmBasicListenerService.class));
         mReactContext.startService(new Intent(mReactContext, GcmBasicRegistrationService.class));
     }
 
