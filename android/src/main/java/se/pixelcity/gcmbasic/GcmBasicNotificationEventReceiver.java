@@ -24,6 +24,7 @@ public class GcmBasicNotificationEventReceiver extends BroadcastReceiver {
                 break;
             case BACKGROUND:
                 sendNotificationIntent(context, dataString, false);
+                bringAppToFront(context);
                 break;
             case DEAD:
                 sendLaunchIntent(context, dataString);
@@ -51,5 +52,17 @@ public class GcmBasicNotificationEventReceiver extends BroadcastReceiver {
 
         context.sendBroadcast(broadcastIntent);
         Log.d(TAG, "sendNotificationIntent - send broadcast, fg: " + inForeground);
+    }
+
+    private void bringAppToFront(Context context) {
+        String packageName = context.getApplicationContext().getPackageName();
+        Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(packageName);
+
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        context.startActivity(launchIntent);
+
+        Log.d(TAG, "bringAppToFront - sending intent");
     }
 }
