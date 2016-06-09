@@ -10,7 +10,7 @@ import com.google.android.gms.iid.InstanceIDListenerService;
 
 public class GcmBasicTokenRefreshService extends InstanceIDListenerService {
 
-    private static final String TAG = "GcmBasic";
+    private final static String TAG = "GcmBasicTokenRefreshService";
 
     /**
      * Called if InstanceID token is updated. This may occur if the security of

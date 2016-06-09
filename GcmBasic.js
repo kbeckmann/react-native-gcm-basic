@@ -38,12 +38,26 @@ class GcmBasic {
     _notifHandlers.set(handler, listener);
   }
 
+  static getLaunchNotification() {
+    var promise = new Promise(function(resolve, reject) {
+      GcmBasicModule.getLaunchNotification((notifString) => {
+        if (notifString != '') {
+          resolve(JSON.parse(notifString));
+        }
+        else {
+          resolve(undefined);
+        }
+      });
+    });
+
+    return promise;
+  }
+
   static subscribeTopic(token, topic) {
     GcmBasicModule.subscribeTopic(token, topic);
   }
 
   static requestPermissions() {
-    console.log('Hej hej');
     GcmBasicModule.requestPermissions();
   }
 
@@ -56,11 +70,5 @@ class GcmBasic {
     _notifHandlers.delete(handler);
   }
 }
-
-/*
-if (GcmBasic.launchNotification) {
-  GcmBasic.launchNotification = JSON.parse(GcmBasic.launchNotification);
-}
-*/
 
 module.exports = GcmBasic;

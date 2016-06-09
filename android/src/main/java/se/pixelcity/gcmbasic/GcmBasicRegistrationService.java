@@ -16,7 +16,7 @@ import java.io.IOException;
 
 public class GcmBasicRegistrationService extends IntentService {
 
-    private static final String TAG = "GcmBasic";
+    private final static String TAG = "GcmBasicRegistrationService";
     private static final String[] TOPICS = {"global"};
 
     public GcmBasicRegistrationService() {

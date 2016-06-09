@@ -17,28 +17,16 @@ import com.google.android.gms.gcm.GcmListenerService;
 
 public class GcmBasicListenerService extends GcmListenerService {
 
-    private static final String TAG = "GcmBasic";
+    private final static String TAG = "GcmBasicListenerService";
     private static final String TITLE_KEY = "gcm.notification.title";
     private static final String BODY_KEY = "gcm.notification.body";
 
-    static boolean mAppActive = false;
-    public static void setAppActive(boolean active) {
-        mAppActive = active;
-        Log.d(TAG, "Setting appActive: " + active);
-    }
-
-    /**
-     * Called when message is received.
-     *
-     * @param from SenderID of the sender.
-     * @param data Data bundle containing message data as key/value pairs.
-     *             For Set of keys use data.keySet().
-     */
     @Override
     public void onMessageReceived(String from, Bundle data) {
-        Log.d(TAG, "onMessageReceived, active: " + mAppActive);
+        boolean isActive = GcmBasicModule.getAppState() == GcmBasicModule.AppState.FOREGROUND;
+        Log.d(TAG, "onMessageReceived, active: " + isActive);
 
-        if (mAppActive) {
+        if (isActive) {
             notifyApp(data);
         }
         else {
@@ -52,10 +40,9 @@ public class GcmBasicListenerService extends GcmListenerService {
         sendBroadcast(messageRecieved);
     }
 
-    /**
-     * Create and show a simple notification containing the received GCM message.
-     */
     private void sendNotification(Bundle data) {
+
+        Log.e(TAG, "onMessageReceived 0");
 
         if (data.containsKey(TITLE_KEY) && data.containsKey(BODY_KEY)) {
             Log.d(TAG, "sendNotification - displaying notification");
@@ -65,21 +52,13 @@ public class GcmBasicListenerService extends GcmListenerService {
             Intent launchIntent = packageManager.getLaunchIntentForPackage(packageName);
             String className = launchIntent.getComponent().getClassName();
 
-            Intent intent;
-            PendingIntent pendingIntent;
-            try {
-                intent = new Intent(this, Class.forName(className));
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                intent.setAction("ACTION_VIEW");
-                intent.setData(Uri.parse("notification:///"));
-                intent.setPackage(packageName);
-                intent.putExtras(data);
-                pendingIntent = PendingIntent.getActivity(this, 0 /* Request code */, intent, PendingIntent.FLAG_ONE_SHOT);
-            }
-            catch (ClassNotFoundException e) {
-                Log.e(TAG, "sendNotification - activity not found");
-                return;
-            }
+            Log.e(TAG, "onMessageReceived 1");
+
+            Intent intent = new Intent(getApplicationContext(), GcmBasicNotificationEventReceiver.class);
+            intent.putExtras(data);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            Log.e(TAG, "onMessageReceived 2");
 
             ApplicationInfo applicationInfo = null;
             try {
@@ -89,6 +68,8 @@ public class GcmBasicListenerService extends GcmListenerService {
                 Log.e(TAG, "sendNotification - package not found");
                 return;
             }
+
+            Log.e(TAG, "onMessageReceived 3");
 
             Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
             NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
@@ -100,8 +81,12 @@ public class GcmBasicListenerService extends GcmListenerService {
                 .setSound(defaultSoundUri)
                 .setContentIntent(pendingIntent);
 
+            Log.e(TAG, "onMessageReceived 4");
+
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.notify(0 /* ID of notification */, notificationBuilder.build());
+            Log.e(TAG, "onMessageReceived 5");
+
         }
         else {
             Log.e(TAG, "sendNotification - unrecognized message");

@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 
 import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.LifecycleEventListener;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContext;
@@ -18,8 +19,6 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.google.android.gms.gcm.GcmPubSub;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 import org.json.*;
 
@@ -27,10 +26,11 @@ import android.util.Log;
 import android.content.Context;
 
 public class GcmBasicModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
-    private final static String TAG = GcmBasicModule.class.getCanonicalName();
+    private final static String TAG = "GcmBasicModule";
     private ReactContext mReactContext;
     private Intent mIntent;
     private Activity mActivity;
+    private String mLaunchNotification = "";
 
     public static String convertJSON(Bundle bundle) {
         JSONObject json = new JSONObject();
@@ -49,6 +49,23 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
         return json.toString();
     }
 
+    public enum AppState {
+        FOREGROUND,
+        BACKGROUND,
+        DEAD
+    }
+
+    private static AppState mAppState = AppState.DEAD;
+
+    public static synchronized AppState getAppState() {
+        return mAppState;
+    }
+
+    private static synchronized void setAppState(AppState state) {
+        Log.d(TAG, "setAppState - " + state);
+        mAppState = state;
+    }
+
     public GcmBasicModule(ReactApplicationContext reactContext, Intent intent, Activity activity) {
         super(reactContext);
         mReactContext = reactContext;
@@ -57,29 +74,24 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
 
         listenGcmRegistration();
         listenGcmReceiveNotification();
+        listenNotificationClick();
         getReactApplicationContext().addLifecycleEventListener(this);
+
+        setAppState(AppState.FOREGROUND);
+
+        if (mIntent != null) {
+            String scheme = mIntent.getScheme();
+            if (scheme != null && scheme.equals("notification") && mIntent.hasExtra("message"))
+            {
+                mLaunchNotification = mIntent.getStringExtra("message");
+                mIntent.removeExtra("message");  // Prevent triggering this next time app is launched
+            }
+        }
     }
 
     @Override
     public String getName() {
         return "GcmBasicModule";
-    }
-
-    @Override
-    public Map<String, Object> getConstants() {
-        final Map<String, Object> constants = new HashMap<>();
-
-        if (mIntent != null) {
-            if (mIntent.getPackage() == mReactContext.getPackageName() &&
-                mIntent.getAction() == "ACTION_VIEW" &&
-                mIntent.getScheme() == "notification")
-            {
-                Bundle bundle = mIntent.getExtras();
-                String bundleString = convertJSON(bundle);
-                constants.put("launchNotification", bundleString);
-            }
-        }
-        return constants;
     }
 
     private void sendEvent(String eventName, Object params) {
@@ -125,6 +137,31 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
         }, intentFilter);
     }
 
+    private void listenNotificationClick() {
+        IntentFilter intentFilter = new IntentFilter("GcmBasicNotificationClicked");
+
+        getReactApplicationContext().registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String message = intent.getStringExtra("message");
+                boolean isForeground = intent.getBooleanExtra("inForeground", true);
+
+                if (isForeground) {
+                    Log.d(TAG, "Sending click event to JS");
+
+                    WritableMap params = Arguments.createMap();
+                    params.putString("data", message);
+
+                    sendEvent("notificationClicked", params);
+                }
+                else {
+                    Log.d(TAG, "Setting launch notification");
+                    mLaunchNotification = message;
+                }
+            }
+        }, intentFilter);
+    }
+
     @ReactMethod
     public void subscribeTopic(String token, String topic) {
         Log.d(TAG, "subscribeTopic");
@@ -144,22 +181,26 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
         Log.d(TAG, "requestPermissions");
         mReactContext.startService(new Intent(mReactContext, GcmBasicListenerService.class));
         mReactContext.startService(new Intent(mReactContext, GcmBasicRegistrationService.class));
+    }
 
-        GcmBasicListenerService.setAppActive(true);
+    @ReactMethod
+    public void getLaunchNotification(Callback callback) {
+        callback.invoke(mLaunchNotification);
     }
 
     @Override
     public void onHostResume() {
-        GcmBasicListenerService.setAppActive(true);
+        setAppState(AppState.FOREGROUND);
     }
 
     @Override
     public void onHostPause() {
-        GcmBasicListenerService.setAppActive(false);
+        setAppState(AppState.BACKGROUND);
+        mLaunchNotification = "";
     }
 
     @Override
     public void onHostDestroy() {
-        GcmBasicListenerService.setAppActive(false);
+        setAppState(AppState.DEAD);
     }
 }
