@@ -10,12 +10,10 @@ var _notifHandlers = new Map();
 
 var DEVICE_NOTIF_EVENT = 'remoteNotificationReceived';
 var NOTIF_REGISTER_EVENT = 'remoteNotificationsRegistered';
+var NOTIF_CLICK_EVENT = 'notificationClicked';
 
 class GcmBasic {
   
-//  static launchNotification = GcmNative.launchNotification ? JSON.parse(GcmNative.launchNotification) : undefined;
-  static launchNotification = {};
-
   static addEventListener(type: string, handler: Function) {
     var listener;
     if (type === 'register') {
@@ -29,6 +27,14 @@ class GcmBasic {
     else if (type === 'notification') {
       listener = DeviceEventEmitter.addListener(
         DEVICE_NOTIF_EVENT,
+        (message) => {
+          handler(JSON.parse(message.data));
+        }
+      );
+    }
+    else if (type == "notificationclick") {
+      listener = DeviceEventEmitter.addListener(
+        NOTIF_CLICK_EVENT,
         (message) => {
           handler(JSON.parse(message.data));
         }
