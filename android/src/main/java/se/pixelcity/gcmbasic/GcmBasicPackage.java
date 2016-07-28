@@ -14,12 +14,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class GcmBasicPackage implements ReactPackage {
-    private Intent mIntent = null;
-    private Activity mActivity = null;
 
-    public GcmBasicPackage(Activity activity, Intent intent) {
-        mActivity = activity;
-        mIntent = intent;
+    public GcmBasicPackage() {
     }
 
     @Override
@@ -27,7 +23,7 @@ public class GcmBasicPackage implements ReactPackage {
             ReactApplicationContext reactContext) {
         List<NativeModule> modules = new ArrayList<>();
 
-        modules.add(new GcmBasicModule(reactContext, mIntent, mActivity));
+        modules.add(new GcmBasicModule(reactContext));
         return modules;
     }
 

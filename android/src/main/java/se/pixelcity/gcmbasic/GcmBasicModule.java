@@ -27,9 +27,7 @@ import android.content.Context;
 
 public class GcmBasicModule extends ReactContextBaseJavaModule implements LifecycleEventListener {
     private final static String TAG = "GcmBasicModule";
-    private ReactContext mReactContext;
     private Intent mIntent;
-    private Activity mActivity;
     private String mLaunchNotification = "";
 
     public static String convertJSON(Bundle bundle) {
@@ -66,16 +64,25 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
         mAppState = state;
     }
 
-    public GcmBasicModule(ReactApplicationContext reactContext, Intent intent, Activity activity) {
+    public GcmBasicModule(ReactApplicationContext reactContext) {
         super(reactContext);
-        mReactContext = reactContext;
-        mActivity = activity;
-        mIntent = intent;
+        reactContext.addLifecycleEventListener(this);
+    }
+
+    private boolean mInitialized = false;
+    private void initGCM() {
+        if (mInitialized) {
+            return;
+        }
+        else {
+            mInitialized = true;
+        }
+        Log.d(TAG, "initGCM!");
+        mIntent = getCurrentActivity().getIntent();
 
         listenGcmRegistration();
         listenGcmReceiveNotification();
         listenNotificationClick();
-        getReactApplicationContext().addLifecycleEventListener(this);
 
         setAppState(AppState.FOREGROUND);
 
@@ -95,7 +102,7 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
     }
 
     private void sendEvent(String eventName, Object params) {
-        mReactContext
+        getReactApplicationContext()
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
             .emit(eventName, params);
     }
@@ -103,7 +110,7 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
     private void listenGcmRegistration() {
         IntentFilter intentFilter = new IntentFilter("GcmBasicTokenReceived");
 
-        mReactContext.registerReceiver(new BroadcastReceiver() {
+        getReactApplicationContext().registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.d(TAG, "Sending token to JS");
@@ -120,12 +127,12 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
     private void listenGcmReceiveNotification() {
         IntentFilter intentFilter = new IntentFilter("GcmBasicMessageReceived");
 
-        mReactContext.registerReceiver(new BroadcastReceiver() {
+        getReactApplicationContext().registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.d(TAG, "Sending message to JS");
 
-                if (mReactContext.hasActiveCatalystInstance()) {
+                if (getReactApplicationContext().hasActiveCatalystInstance()) {
                     String message = intent.getStringExtra("message");
 
                     WritableMap params = Arguments.createMap();
@@ -166,7 +173,7 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
     public void subscribeTopic(String token, String topic) {
         Log.d(TAG, "subscribeTopic");
 
-        GcmPubSub pubSub = GcmPubSub.getInstance(this.mReactContext);
+        GcmPubSub pubSub = GcmPubSub.getInstance(getReactApplicationContext());
 
         try {
             pubSub.subscribe(token, topic, null);
@@ -179,7 +186,7 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
     @ReactMethod
     public void requestPermissions() {
         Log.d(TAG, "requestPermissions");
-        mReactContext.startService(new Intent(mReactContext, GcmBasicRegistrationService.class));
+        getReactApplicationContext().startService(new Intent(getReactApplicationContext(), GcmBasicRegistrationService.class));
     }
 
     @ReactMethod
@@ -189,6 +196,7 @@ public class GcmBasicModule extends ReactContextBaseJavaModule implements Lifecy
 
     @Override
     public void onHostResume() {
+        initGCM();
         setAppState(AppState.FOREGROUND);
     }
 
